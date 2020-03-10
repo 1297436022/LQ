@@ -1,0 +1,766 @@
+[TOC]
+
+## 数据定义
+
+### 模式的定义与删除
+
+#### 定义模式
+
+为用户WANG定义一个学生-课程模式S-T
+
+```sql
+CREATE SCHEMA "S-T" AUTHORIZATION WANG
+```
+
+#### 删除模式
+
+删除模式ZHANG，该模式中定义的表也将删除
+
+```sql
+DROP SCHEMA ZHANG CASCADE
+```
+
+### 基本表的定义，删除与修改
+
+#### 定义基本表
+
+建立一个学生表Student
+
+```sql
+CREATE TABLE Student
+(
+    Sno CHAR(9) PRIMARY KEY,
+    Sname CHAR(20) UNIQUE,
+    Ssex CHAR(2),
+    Sage SMALLINT,
+    Sdept CHAR(20)
+);
+```
+
+建立一个课程表Course
+
+```sql
+CREATE TABLE Course
+(
+    Cno CHAR(4) PRIMARY KEY,
+    Cname CHAR(40) NOT NULL,
+    Cpno CHAR(4),
+    Ccredit SMALLINT,
+    FOREIGN KEY(Cpno) REFERENCES Course(Cno)/*Cpno是外码被参照表是Course 被参照列Cno*/
+);
+```
+
+建立学生选课表SC
+
+```sql
+CREATE TABLE SC
+(
+    Sno CHAR(9),
+    Cno CHAR(4),
+    Grade SMALLINT,
+    PRIMARY KEY(Sno, Cno),
+    FOREIGN KEY(Sno) REFERENCES Student(Sno),/*Sno是外码，被参照表是Student*/
+    FOREIGN KEY(Cno) REFERENCES Course(Cno)/*Cno是外码，被参照表是Course*/
+);
+```
+
+#### 修改基本表
+
+向Student表添加“入学时间”列，其数据类型为日期型
+
+```sql
+ALTER TABLE Student ADD S_entrance DATE;
+```
+
+将年龄的数据类型由字符串型（假设原来的数据类型是字符型）改为整数
+
+```sql
+ALTER TABLE Student ALTER COLUMN Sage INT;
+```
+
+增加课程名称必须取唯一值的约束条件
+
+```sql
+ALTER TABLE Student ADD UNIQUE(Cname);
+```
+
+#### 删除基本表
+
+删除Student表（CASCADE字段会将在此表上建立的索引，触发器，视图一般也将删除）
+
+```sql
+DROP TABLE Student CASCADE;
+```
+
+### 索引的建立与删除
+
+#### 建立索引
+
+为Student,Course,SC三个表建立索引。其中Student表按学号升序建唯一索引，Course表按课程号升序建唯一索引，SC表按学号升序和课程号降序建唯一索引
+
+```sql
+CREATE UNIQUE INDEX Stusno ON Student(Sno);/*默认升序*/
+CREATE UNIQUE INDEX Coucno ON Course(Cno);
+CREATE UNIQUE INDEX SCno ON SC(Sno ASC, Cno DESC);
+```
+
+#### 删除索引
+
+删除Student表的Stusname索引
+
+```sql
+DROP INDEX Stusname;
+```
+
+## 数据查询
+
+### 单表查询
+
+#### 选择表中的若干列
+
+查询全体学生的学号与姓名
+
+```sql
+SELECT Sno, Sname FROM Student;
+```
+
+查询全体学生的记录
+
+```sql
+SELECT * FROM Student;
+```
+
+查询全体学生的姓名，出生年份，所在的院系，要求用小写字母表示系名。并且取别名。
+
+```sql
+SELECT Sname NAME,'Year of Birth:'BIRTH,2014-Sage BIRTHDAY,LOWER(Sdept) DEPARTMENT 
+FROM Student;
+```
+
+#### 选择表中的若干元组
+
+##### 比较大小
+
+查询选修了课程的学生学号,去掉重复行
+
+```sql
+SELECT DISTINCT Sno 
+FROM SC;
+```
+
+查询计算机科学系全体学生的名单
+
+```sql
+SELECT Sname 
+FROM Student 
+WHERE Sdept='CS';
+```
+
+查询所有年龄在20岁以下的学生姓名及其年龄
+
+```sql
+SELECT Sname,Sage 
+FROM Student 
+WHERE Sage<20;
+```
+
+查询考试成绩不及格的学生的学号
+
+```sql
+SELECT DISTINCT Sno 
+FROM SC 
+WHERE Grade<60;
+```
+
+##### 确定范围
+
+查询年龄在20~23岁（包括20岁和23岁）之间的学生的姓名，系别和年龄
+
+```sql
+SELECT Sname,Sdept,Sage 
+FROM Student 
+WHERE Sage BETWEEN 20 AND 23;
+```
+
+查询年龄不在20~23岁之间的学生姓名，系别和年龄
+
+```sql
+SELECT Sname,Sdept,Sage 
+FROM Student 
+WHERE Sage NOT BETWEEN 20 AND 23;
+```
+
+##### 确定集合
+
+查询计算机科学（CS）数学系（MA）和信息系（IS）学生的姓名和性别
+
+```sql
+SELECT Sname,Ssex 
+FROM Student 
+WHERE Sdept IN('CS','MA','IS');
+```
+
+查询不是计算机科学（CS）数学系（MA）和信息系（IS）学生的姓名和性别
+
+```sql
+SELECT Sname,Ssex 
+FROM Student 
+WHERE Sdept NOT IN('CS','MA','IS');
+```
+
+##### 字符匹配
+
+查询学号为201215121的学生的详细情况
+
+```sql
+SELECT * 
+FROM Student 
+WHERE Sno LIKE '201215121';
+
+SELECT * 
+FROM Student 
+WHERE Sno='201215121';
+```
+
+查询所有姓刘的学生的姓名，学号，性别
+
+```sql
+SELECT Sname,Sno,Ssex 
+FROM Student 
+WHERE Sname LIKE '刘%';
+```
+
+查询姓“欧阳”且全名为三个汉字的学生的姓名
+
+```sql
+SELECT Sname 
+FROM Student 
+WHERE Sname LIKE '欧阳_';
+```
+
+查询名字第二个字为‘阳’的学生的姓名和学号
+
+```sql
+SELECT Sname,Sno 
+FROM Student 
+WHERE Sname LIKE '_阳%';
+```
+
+查询所有不姓刘的学生的姓名，学号，性别
+
+```sql
+SELECT Sname,Sno,Ssex 
+FROM Student 
+WHERE Sname NOT LIKE '刘%';
+```
+
+查询DB_Design课程的课程号和学分
+
+```sql
+SELECT Cno,Ccredit 
+FROM Course 
+WHERE Cname LIKE 'DB\_Design' ESCAPE'\';
+```
+
+查询以“DB_”开头，且倒数第三个字符为i的课程的详细情况
+
+```sql
+SELECT * 
+FROM Course 
+WHERE Cname LIKE 'DB\_%i__' ESCAPE'\';
+```
+
+##### 涉及空值的查询
+
+查询某些学生选课后没有参加考试，缺少成绩的学生的学号和相应的课程号
+
+```sql
+SELECT Sno,Cno 
+FROM SC 
+WHERE Grade IS NULL;/* IS不能用=代替*/
+```
+
+查询所有有成绩的学生学号和课程号
+
+```sql
+SELECT Sno,Cno 
+FROM SC 
+WHERE Grade IS NOT NULL;
+```
+
+##### 多重条件查询
+
+查询计算机科学系年龄在20岁以下的学生姓名
+
+```sql
+SELECT Sname 
+FROM Student 
+WHERE Sdept='CS' AND 
+      Sage<20;
+```
+
+查询计算机科学（CS）数学系（MA）和信息系（IS）学生的姓名和性别
+
+```sql
+SELECT Sname,Ssex 
+FROM Student 
+WHERE Sdept='CS' OR 
+      Sdept='MA' OR 
+      Sdept='IS';
+```
+
+#### ORDER BY子句
+
+查询选修了3号课程的学生的学号及其成绩，查询结果按分数的降序排序
+
+```sql
+SELECT Sno,Grade
+FROM SC
+WHERE Cno='3'
+ORDER BY Grade DESC;
+```
+
+#### 聚集函数（只能用于SELECT子句和GROUP BY中的HAVING子句）
+
+查询学生总人数
+
+```sql
+SELECT COUNT(*) 
+FROM Student;
+```
+
+查询选修了课程的学生总人数
+
+```sql
+SELECT COUNT(DISTINCT Sno) 
+FROM SC;
+```
+
+计算选修1号课程的学生平均成绩
+
+```sql
+SELECT AVG(Grade) 
+FROM SC 
+WHERE Cno='1';
+```
+
+查询选修1号课程的学生最高分数
+
+```sql
+SELECT MAX(Grade) 
+FROM SC 
+WHERE Cno='1';
+```
+
+查询学生201215012选修课程的总学分数
+
+```sql
+SELECT SUM(Ccredit) 
+FROM SC,Course 
+WHERE Sno='201215012' AND 
+      SC.Cno=Course.Cno;
+```
+
+#### GROUP BY子句(细化聚集函数的作用对象)
+
+求各个课程号及相应的选课人数
+
+```sql
+SELECT Cno,COUNT(Cno) 
+FROM SC 
+GROUP BY Cno;
+```
+
+查询选修了三门以上课程的学生学号
+
+```sql
+SELECT Sno 
+FROM SC 
+GROUP BY Sno
+HAVING COUNT(*)>3;
+```
+
+查询平均成绩大于等于90的学生学号和平均成绩
+
+```sql
+SELECT Sno,AVG(Grade)
+FROM SC
+GROUP BY Sno
+HAVING AVG(Grade)>=90;
+```
+
+### 连接查询
+
+#### 等值，非等值连接，自然连接
+
+查询每个学生及其选修课程的情况
+
+```sql
+SELECT Student.*,SC.*
+FROM Student,SC
+WHERE Student.Sno=SC.Sno;/*存在重复列*/
+```
+
+```sql
+SELECT Student.Sno,Sname,Ssex,Sage,Sdept,Cno,Grade
+FROM Student,SC
+WHERE Student.Sno=SC.Sno;/*把目标列中重复的属性列去掉则为自然连接*/
+```
+
+查询2号课程且成绩在90分以上的所有学生的学号和姓名
+
+```sql
+SELECT Student.Sno,Sname
+FROM Student,SC
+WHERE Student.Sno=SC.Sno AND
+      SC.Cno='2' AND
+      SC.Grade>90;
+```
+
+#### 自身连接
+
+查询每一门课的间接先修课（即先修课的先修课）
+
+```sql
+SELECT FIRST.Con,SECOND.Cpno
+FROM Course FIRST,Course SECOND
+WHERE FIRST.Cpno=SECOND.Cno;
+```
+
+#### 外连接
+
+以Student表为主体列出每个学生的基本情况及其选课情况
+
+```sql
+SELECT Student.Sno,Sname,Ssex,Sage,Sdept,Cno,Grade
+FROM Student LEFT OUTER JOIN SC ON(Student.Sno=SC.Sno);/*左外连接*/
+```
+
+#### 多表连接
+
+查询每个学生的学号，姓名，选修的课程名及成绩
+
+```sql
+SELECT Student.Sno,Sname,Cname,Grade
+FROM Student,SC,Course
+WHERE Student.Sno=SC.Sno AND
+      SC.Cno=Course.Cno;
+```
+
+### 嵌套查询
+
+#### 带有IN谓词的子查询
+
+查询与“刘晨”在同一个系学习的学生
+
+```sql
+SELECT Sno,Sname,Sdept
+FROM Student
+WHERE Sdept IN
+      (SELECT Sdept
+       FROM Student
+       WHERE Sname='刘晨');
+```
+
+查询选修了课程名为“信息系统”的学生学号和姓名
+
+```sql
+SELECT Sno,Sname
+FROM Student
+WHERE Sno IN
+      (SELECT Sno
+       FROM SC
+       WHERE Cno IN
+       (SELECT Cno
+        FROM Course
+        WHERE Cname='信息系统'
+       )
+      );
+```
+
+#### 带有比较运算符的子查询
+
+找出每个学生超过他自己选修课程平均成绩的课程号
+
+```sql
+SELECT Sno,Cno
+FROM SC x
+WHERE Grade>=(SELECT AVG(Grade)
+              FROM SC y
+              WHERE y.Sno=x.Sno);
+```
+
+#### 带有ANY(SOME)或ALL谓词的子查询
+
+查询非计算机科学系中比计算机科学系任意一个学生年龄小的学生姓名和年龄
+
+```sql
+SELECT Sname,Sage
+FROM Student
+WHERE Sage<ANY
+           (SELECT Sage
+            FROM Student
+            WHERE Sdept='CS')
+AND Sdept<>'CS';/*这是父查询块的条件 <>表示不等于*/
+```
+
+查询非计算机科学系中比计算机科学系所有学生年龄都小的学生姓名及年龄
+
+```sql
+SELECT Sname,Sage
+FROM Student
+WHERE Sage<ALL
+           (SELECT Sage
+            FROM Student
+            WHERE Sdept='CS')
+AND Sdept<>'CS';
+```
+
+#### 带有EXISTS谓词的子查询
+
+查询所有选修了1号课程的学生姓名
+
+```sql
+SELECT Sname
+FROM Student
+WHERE EXISTS
+      (SELECT *
+       FROM SC
+       WHERE Sno=Student.Sno AND Cno='1');
+```
+
+查询没有选修1号课程的学生姓名
+
+```sql
+SELECT Sname
+FROM Student
+WHERE NOT EXISTS
+      (SELECT *
+       FROM SC
+       WHERE Sno=Student.Sno AND Cno='1');
+```
+
+### 集合查询
+
+查询计算机科学系的学生及年龄不大于19岁的学生
+
+```sql
+SELECT *
+FROM Student
+WHERE Sdept='CS'
+UNION
+SELECT *
+FROM Student
+WHERE Sage<=19;
+```
+
+
+
+## 数据更新
+
+### 插入数据
+
+#### 插入元组
+
+将一个新学生元组（学号：201215128，姓名：陈冬，性别：男，所在系：IS，年龄：18岁）插入到Student表中
+
+```sql
+INSERT
+INTO Student(Sno,Sname,Ssex,Sdept,Sage)
+VALUES('201215128','陈冬','男','IS',18);
+```
+
+将学生张成民的信息插入到Student表中
+
+```sql
+INSERT
+INTO Student
+VALUES('201215126','张成民','男',18,'CS');
+```
+
+插入一条选课记录（‘201215128’，‘1’）
+
+```sql
+INSERT
+INTO SC(Sno,Cno)
+VALUES('201215128','1');
+或
+INSERT
+INTO SC
+VALUES('201215128','1',NULL);
+```
+
+#### 插入子查询结果
+
+对每一个系，求学生的平均年龄，并把结果存入数据库
+
+```sql
+INSERT
+INTO Dept_age(Sdept,Avg_age)
+SELECT Sdept,AVG(Sage)
+FROM Student
+GROUP BY Sdept;
+```
+
+### 修改数据
+
+#### 修改某一个元组的值
+
+将学生201215121的年龄改为22岁
+
+```sql
+UPDATE Student
+SET Sage=22
+WHERE Sno='201215121';
+```
+
+#### 修改多个元组的值
+
+将所有学生的年龄增加1岁
+
+```sql
+UPDATE Student
+SET Sage=Sage+1;
+```
+
+#### 带子查询的修改语句
+
+将计算机科学系全体学生的成绩置零
+
+```sql
+UPDATE SC
+SET Grade=0
+WHERE Sno IN
+      (SELECT Sno
+       FROM Student
+       WHERE Sdept='CS');
+```
+
+### 删除数据
+
+#### 删除某一个元组的值
+
+删除学号为201215128的学生记录
+
+```sql
+DELETE
+FROM Student
+WHERE Sno='201215128';
+```
+
+#### 删除多个元组的值
+
+删除所有学生的选课记录
+
+```sql
+DELETE
+FROM SC;/*使SC成为空表*/
+```
+
+#### 带子查询的删除语句
+
+删除计算机科学系所有学生的选课记录
+
+```sql
+DELETE
+FROM SC
+WHERE Sno IN
+      (SELECT Sno
+       FROM Student
+       WHERE Sdept='CS');
+```
+
+
+
+## 视图操作
+
+###定义视图
+
+#### 建立视图
+
+建立信息系学生的视图
+
+```sql
+CREATE VIEW IS_Student
+AS
+SELECT Sno,Sname,Sage
+FROM Student
+WHERE Sdept='IS';
+```
+
+建立信息系选修了1号课程的学生的视图（包括学号，姓名，成绩）
+
+```sql
+CREATE VIEW IS_S1(Sno,Sname,Grade)
+AS
+SELECT Student.Sno,Sname,Grade
+FROM Student,SC
+WHERE Sdept='IS' AND
+      Student.Sno = SC.Sno AND
+      SC.Cno='1';
+```
+
+建立信息系选修了1号课程且成绩在90分以上的学生的视图(视图之上建立视图)
+
+```sql
+CREATE VIEW IS_S2
+AS
+SELECT Sno,Sname,Grade
+FROM IS_S1
+WHERE Grade>=90;
+```
+
+定义一个反映学生出生年份的视图
+
+```sql
+CREATE VIEW BT_S(Sno,Sname,Sbirth)
+AS
+SELECT Sno,Sname,2014-Sage
+FROM Student;
+```
+
+将学生的学号及平均成绩定义为一个 视图
+
+```sql
+CREATE VIEW S_G(Sno,Gavg)
+AS
+SELECT Sno,AVG(Grade)
+FROM SC
+GROUP BY Sno;
+```
+
+将Student表中所有女生记录定义为一个视图
+
+```sql
+CREATE VIEW F_Student(F_sno,name,sex,age,dept)
+AS
+SELECT *
+FROM Student
+WHERE Ssex='女';
+```
+
+#### 删除视图
+
+删除视图BS_S和视图IS_S1
+
+```sql
+DROP VIEW BT_S;
+DROP VIEW IS_S1 CASCADE;/*删除了视图IS_S1和由它导出的所有视图*/
+```
+
+### 查询视图
+
+### 更新视图
+
+## 触发器
+
+
+
+
+
+
+
+
+
+
+
